@@ -9,30 +9,12 @@ const DRAG_PX = 4; // pointer travel below this counts as a click
 const LONG_PRESS_MS = 350; // touch: hold this long (moving < LONG_PRESS_SLOP px) to start dragging
 const LONG_PRESS_SLOP = 8;
 
-// Greedy lanes per cluster of overlapping items (items sorted by start). -> [{ lane, lanes }] aligned with items
-export function assignLanes(items) {
-  const out = [];
-  let from = 0, laneEnds = [], clusterEnd = -1;
-  const close = (to) => { for (let k = from; k < to; k++) out[k].lanes = laneEnds.length; };
-  items.forEach((it, k) => {
-    const fresh = it.start >= clusterEnd;
-    if (fresh) { close(k); from = k; laneEnds = []; }
-    let lane = laneEnds.findIndex((e) => e <= it.start);
-    if (lane < 0) lane = laneEnds.length;
-    laneEnds[lane] = it.end;
-    clusterEnd = fresh ? it.end : Math.max(clusterEnd, it.end);
-    out.push({ lane, lanes: 1 });
-  });
-  close(items.length);
-  return out;
-}
-
 // Vertical pointer-drag of a block; commits once on release, a short press stays a click.
 // Mouse/pen drag after DRAG_PX; touch needs a long press (LONG_PRESS_MS) so a finger can still scroll the page.
 function enableDrag(div, it, view, ui) {
   div.style.touchAction = 'pan-y';
   div.addEventListener('pointerdown', (e) => {
-    if (e.button || e.target.closest('.del')) return;
+    if (e.button || e.target.closest('.del, .grip')) return;
     const y0 = e.clientY, x0 = e.clientX;
     const touch = e.pointerType === 'touch';
     let moved = false, armed = !touch, timer;
@@ -77,7 +59,42 @@ function enableDrag(div, it, view, ui) {
   if (matchMedia('(pointer: coarse)').matches) div.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
-// ui: { selectedLine, onSelect(line), onDelete(line), onMove(line, start, end) } - interactive only, exportPng ignores it
+// Edge resize: drag a block's top/bottom grip (5-minute steps, min 5 min). Commits once on release.
+// Touch only works on the selected block's grips (touch-action: none there), so scrolling stays free elsewhere.
+function enableResize(grip, edge, it, view, ui, div, selected) {
+  grip.addEventListener('pointerdown', (e) => {
+    if (e.button || (e.pointerType === 'touch' && !selected)) return; // touch on unselected block: falls through to body long-press
+    e.stopPropagation();
+    e.preventDefault();
+    const y0 = e.clientY, top0 = parseFloat(div.style.top);
+    let moved = false, r = { start: it.start, end: it.end };
+    try { grip.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+    const onMove = (ev) => {
+      if (!moved && Math.abs(ev.clientY - y0) < 2) return;
+      moved = true;
+      div.classList.add('resizing');
+      const m = Math.round((it[edge === 'top' ? 'start' : 'end'] + (ev.clientY - y0) / view.px) / 5) * 5;
+      r = edge === 'top' ? { start: Math.max(0, Math.min(m, it.end - 5)), end: it.end } : { start: it.start, end: Math.min(1440, Math.max(m, it.start + 5)) };
+      div.style.top = `${top0 + (r.start - it.start) * view.px}px`;
+      div.style.height = `${(r.end - r.start) * view.px}px`;
+    };
+    const end = (ev) => {
+      grip.removeEventListener('pointermove', onMove);
+      grip.removeEventListener('pointerup', end);
+      grip.removeEventListener('pointercancel', end);
+      div.classList.remove('resizing');
+      if (!moved) return;
+      div.addEventListener('click', (c) => c.stopImmediatePropagation(), { capture: true, once: true });
+      if (ev.type === 'pointerup') ui.onMove(it.line, r.start, r.end);
+      else { div.style.top = `${top0}px`; div.style.height = `${(it.end - it.start) * view.px}px`; }
+    };
+    grip.addEventListener('pointermove', onMove);
+    grip.addEventListener('pointerup', end);
+    grip.addEventListener('pointercancel', end);
+  });
+}
+
+// ui: { selectedLine, onSelect(line), onDelete(line), onMove(line, start, end) (body move and edge resize) } - interactive only, exportPng ignores it
 export function renderTimeline(el, group, view = DEFAULT_VIEW, ui = {}) {
   el.replaceChildren();
   if (!group || !group.items.length) {
@@ -96,23 +113,26 @@ export function renderTimeline(el, group, view = DEFAULT_VIEW, ui = {}) {
     el.append(hour);
   }
 
-  const lanes = assignLanes(items);
-  for (const [n, it] of items.entries()) {
+  for (const it of items) {
     const known = TYPES.includes(it.type);
     const div = document.createElement('div');
     div.className = `item t-${known ? it.type : 'unknown'}${(it.end - it.start) * view.px < SHORT_PX ? ' short' : ''}`;
     div.style.top = `${(it.start - t0) * view.px}px`;
     div.style.height = `${(it.end - it.start) * view.px}px`;
-    const { lane, lanes: count } = lanes[n];
-    if (count > 1) {
-      div.style.left = `calc(8px + (100% - 8px) * ${lane / count})`;
-      div.style.width = `calc((100% - 8px) / ${count})`;
-      div.style.right = 'auto';
-    }
     const time = `${formatTime(it.start)}-${formatTime(it.end)}`;
     div.title = [`${time} ${it.title}`, ...it.notes].join('\n');
     div.append(span('time', time), span('title', it.title), ...it.notes.map((n) => span('note', n)));
-    if (ui.onMove) enableDrag(div, it, view, ui);
+    if (ui.onMove) {
+      enableDrag(div, it, view, ui);
+      const hPx = (it.end - it.start) * view.px;
+      for (const edge of ['top', 'bot']) {
+        const grip = document.createElement('div');
+        grip.className = `grip ${edge}`;
+        grip.style.height = `${hPx < 24 ? hPx * 0.25 : 6}px`;
+        enableResize(grip, edge, it, view, ui, div, it.line === ui.selectedLine);
+        div.append(grip);
+      }
+    }
     if (ui.onSelect) div.onclick = () => ui.onSelect(it.line);
     if (it.line === ui.selectedLine) {
       div.classList.add('selected');

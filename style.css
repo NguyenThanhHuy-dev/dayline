@@ -55,6 +55,13 @@ button:disabled { opacity: .45; cursor: default; }
 .item.selected { outline: 2px solid var(--fg); outline-offset: 1px; z-index: 1; }
 .item .del { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; padding: 0; line-height: 1; border-radius: 50%; }
 .item { user-select: none; -webkit-user-select: none; }
+.grip { position: absolute; left: 0; right: 0; cursor: ns-resize; z-index: 1; }
+.grip.top { top: 0; } .grip.bot { bottom: 0; }
+.grip::after { content: ""; position: absolute; left: 50%; top: 50%; width: 28px; height: 3px; margin: -1.5px 0 0 -14px; border-radius: 2px; background: var(--fg); opacity: 0; }
+.item:hover .grip::after, .item.selected .grip::after, .item.resizing .grip::after { opacity: .35; }
+.grip:hover::after { opacity: .8; }
+.item.selected .grip { touch-action: none; }
+.item.resizing { z-index: 2; box-shadow: 0 4px 12px rgb(0 0 0 / .25); }
 .item.dragging { opacity: .8; z-index: 2; cursor: grabbing; box-shadow: 0 6px 16px rgb(0 0 0 / .3); -webkit-touch-callout: none; }
 #panes, #selbar { display: none; }
 .t-unknown, #stats i.t-unknown { background: repeating-linear-gradient(45deg, var(--unknown) 0 5px, transparent 5px 10px), var(--bg); }
@@ -76,6 +83,7 @@ button:disabled { opacity: .45; cursor: default; }
   #zoom { flex: 1; min-width: 0; height: 44px; }
   #full { width: 24px; height: 24px; }
   .item { touch-action: pan-y; }
+  .item.selected .grip { height: 16px !important; max-height: 33%; }
   .item .del { width: 36px; height: 36px; font-size: 20px; }
   .item.selected { overflow: visible; }
   #selbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 8px 12px; background: var(--panel); border-top: 1px solid var(--line); }

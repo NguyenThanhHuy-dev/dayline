@@ -2,7 +2,7 @@ import { parse, TYPES, formatIssue, groupLabel } from './parser.js';
 import { renderTimeline, exportPng, DEFAULT_VIEW } from './render.js';
 import { buildPrompt } from './prompt.js';
 import { createHistory } from './history.js';
-import { removeLine, setLineTimes } from './edit.js';
+import { removeLine, resolveRange, applyEdits } from './edit.js';
 import { statsByType, formatDuration } from './stats.js';
 import { t, getLang, setLang } from './i18n.js';
 
@@ -66,9 +66,15 @@ function deleteLine(line) {
   flush();
 }
 
+// body move or edge resize: one undoable edit, other blocks of the group shrink/vanish (single column)
 function moveLine(line, start, end) {
+  const group = parse(src.value).groups.find((g) => g.name === selected);
+  const edits = resolveRange(group?.items ?? [], line, start, end);
+  if (!edits.length) { update(); return; }
   flush();
-  src.value = setLineTimes(src.value, line, start, end);
+  const gone = edits.filter((x) => x.remove).map((x) => x.line);
+  if (selLine !== null) selLine = gone.includes(selLine) ? null : selLine - gone.filter((l) => l < selLine).length;
+  src.value = applyEdits(src.value, edits);
   changed();
   flush();
 }
