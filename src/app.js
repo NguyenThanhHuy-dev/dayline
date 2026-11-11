@@ -1,11 +1,13 @@
 import { parse, TYPES } from './parser.js';
-import { renderTimeline, exportPng } from './render.js';
+import { renderTimeline, exportPng, DEFAULT_VIEW } from './render.js';
 import { buildPrompt } from './prompt.js';
 import { statsByType, formatDuration } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
 const src = $('src');
 const KEY = 'dayline:text';
+const VKEY = 'dayline:view';
+const view = { ...DEFAULT_VIEW, ...JSON.parse(localStorage.getItem(VKEY) ?? '{}') };
 let selected = null;
 
 function update() {
@@ -24,7 +26,7 @@ function update() {
   }));
 
   const group = groups.find((g) => g.name === selected);
-  renderTimeline($('timeline'), group);
+  renderTimeline($('timeline'), group, view);
   $('stats').replaceChildren(...(group ? statsByType(group) : []).map(({ type, minutes }) => {
     const item = document.createElement('li');
     const sw = document.createElement('i');
@@ -66,7 +68,24 @@ $('share').addEventListener('click', async (e) => {
   flash(e.currentTarget, 'Đã copy link!');
 });
 
-$('png').addEventListener('click', () => exportPng(parse(src.value).groups.find((g) => g.name === selected)));
+$('png').addEventListener('click', () => exportPng(parse(src.value).groups.find((g) => g.name === selected), view));
+
+function setView(patch) {
+  Object.assign(view, patch);
+  view.px = Math.min(4, Math.max(0.5, view.px));
+  $('zoom').value = view.px;
+  localStorage.setItem(VKEY, JSON.stringify(view));
+  update();
+}
+$('zoom').addEventListener('input', (e) => setView({ px: +e.target.value }));
+$('full').addEventListener('change', (e) => setView({ full: e.target.checked }));
+$('timeline').addEventListener('wheel', (e) => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  setView({ px: view.px * (e.deltaY < 0 ? 1.1 : 0.9) });
+}, { passive: false });
+$('zoom').value = view.px;
+$('full').checked = view.full;
 
 // initial content: URL hash > localStorage > example files
 const fetchText = (p) => fetch(p).then((r) => (r.ok ? r.text() : ''));

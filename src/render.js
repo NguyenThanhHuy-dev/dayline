@@ -1,24 +1,24 @@
 import { TYPES } from './parser.js';
 import { formatTime } from './serializer.js';
 
-export const PX_PER_MIN = 1.5;
-const SHORT_MIN = 40; // items shorter than this render on one line
+export const DEFAULT_VIEW = { px: 1.5, full: false };
+const SHORT_PX = 60; // items shorter than this (in px) render on one line
 
 // shortcut: overlapping items are drawn on top of each other (a warning is shown), when needed add lanes
-export function renderTimeline(el, group) {
+export function renderTimeline(el, group, view = DEFAULT_VIEW) {
   el.replaceChildren();
   if (!group || !group.items.length) {
     el.style.height = '';
     el.textContent = 'Chưa có dữ liệu.';
     return;
   }
-  const { items, t0, t1 } = layout(group);
-  el.style.height = `${(t1 - t0) * PX_PER_MIN}px`;
+  const { items, t0, t1 } = layout(group, view.full);
+  el.style.height = `${(t1 - t0) * view.px}px`;
 
   for (let m = t0; m <= t1; m += 60) {
     const hour = document.createElement('div');
     hour.className = 'hour';
-    hour.style.top = `${(m - t0) * PX_PER_MIN}px`;
+    hour.style.top = `${(m - t0) * view.px}px`;
     hour.textContent = formatTime(m);
     el.append(hour);
   }
@@ -26,9 +26,9 @@ export function renderTimeline(el, group) {
   for (const it of items) {
     const known = TYPES.includes(it.type);
     const div = document.createElement('div');
-    div.className = `item t-${known ? it.type : 'unknown'}${it.end - it.start < SHORT_MIN ? ' short' : ''}`;
-    div.style.top = `${(it.start - t0) * PX_PER_MIN}px`;
-    div.style.height = `${(it.end - it.start) * PX_PER_MIN}px`;
+    div.className = `item t-${known ? it.type : 'unknown'}${(it.end - it.start) * view.px < SHORT_PX ? ' short' : ''}`;
+    div.style.top = `${(it.start - t0) * view.px}px`;
+    div.style.height = `${(it.end - it.start) * view.px}px`;
     const time = `${formatTime(it.start)}-${formatTime(it.end)}`;
     div.title = [`${time} ${it.title}`, ...it.notes].join('\n');
     div.append(span('time', time), span('title', it.title), ...it.notes.map((n) => span('note', n)));
@@ -36,21 +36,23 @@ export function renderTimeline(el, group) {
   }
 }
 
-function layout(group) {
+// full: show the whole 00:00-24:00 day instead of just the span of the items
+export function layout(group, full = false) {
   const items = [...group.items].sort((a, b) => a.start - b.start);
+  if (full) return { items, t0: 0, t1: 1440 };
   const t0 = Math.floor(items[0].start / 60) * 60;
   const t1 = Math.ceil(Math.max(...items.map((i) => i.end)) / 60) * 60;
   return { items, t0, t1 };
 }
 
 // Draws the group on a canvas (same geometry as the DOM timeline) and downloads it as PNG.
-export function exportPng(group) {
+export function exportPng(group, view = DEFAULT_VIEW) {
   if (!group?.items.length) return;
-  const { items, t0, t1 } = layout(group);
+  const { items, t0, t1 } = layout(group, view.full);
   const W = 520, L = 56, TOP = 44, S = 2;
   const cv = document.createElement('canvas');
   cv.width = W * S;
-  cv.height = (TOP + (t1 - t0) * PX_PER_MIN + 16) * S;
+  cv.height = (TOP + (t1 - t0) * view.px + 16) * S;
   const ctx = cv.getContext('2d');
   ctx.scale(S, S);
   const css = getComputedStyle(document.documentElement);
@@ -66,15 +68,15 @@ export function exportPng(group) {
   ctx.textBaseline = 'middle';
   font(400, 11);
   for (let m = t0; m <= t1; m += 60) {
-    const y = TOP + (m - t0) * PX_PER_MIN;
+    const y = TOP + (m - t0) * view.px;
     ctx.fillStyle = v('--muted');
     ctx.fillText(formatTime(m), 10, y);
     ctx.fillStyle = v('--line');
     ctx.fillRect(L, y, W - L - 8, 1);
   }
   for (const it of items) {
-    const y = TOP + (it.start - t0) * PX_PER_MIN;
-    const h = (it.end - it.start) * PX_PER_MIN;
+    const y = TOP + (it.start - t0) * view.px;
+    const h = (it.end - it.start) * view.px;
     const x = L + 6, w = W - x - 8;
     ctx.save();
     ctx.beginPath();
@@ -84,7 +86,7 @@ export function exportPng(group) {
     ctx.clip();
     ctx.fillStyle = v('--fg');
     const time = `${formatTime(it.start)}-${formatTime(it.end)}`;
-    if (it.end - it.start < SHORT_MIN) {
+    if ((it.end - it.start) * view.px < SHORT_PX) {
       font(600, 13);
       ctx.fillText(`${time}  ${it.title}`, x + 8, y + h / 2);
     } else {
