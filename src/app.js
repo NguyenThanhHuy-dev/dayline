@@ -5,7 +5,7 @@ import { statsByType, formatDuration } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
 const src = $('src');
-const KEY = 'routine-viz:text';
+const KEY = 'dayline:text';
 let selected = null;
 
 function update() {

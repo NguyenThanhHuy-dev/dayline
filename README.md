@@ -1,4 +1,4 @@
-# routine-viz
+# dayline
 
 Web app thuần frontend: dán hoặc tải file text thời gian biểu, xem dạng timeline dọc. Không backend, không bước build.
 

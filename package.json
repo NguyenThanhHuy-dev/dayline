@@ -1,5 +1,5 @@
 {
-  "name": "routine-viz",
+  "name": "dayline",
   "private": true,
   "type": "module",
   "scripts": { "test": "node --test" }
