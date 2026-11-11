@@ -20,6 +20,10 @@
       <label class="btn">Tải file .txt<input id="file" type="file" accept=".txt,text/plain" hidden></label>
     </div>
   </header>
+  <nav id="panes" role="tablist">
+    <button id="pane-edit" type="button" role="tab" data-pane="edit">Soạn thảo</button>
+    <button id="pane-view" type="button" role="tab" data-pane="view">Thời gian biểu</button>
+  </nav>
   <main>
     <section class="editor">
       <textarea id="src" spellcheck="false" placeholder="Dán thời gian biểu vào đây…"></textarea>
@@ -35,6 +39,10 @@
       <div id="timeline"></div>
     </section>
   </main>
+  <div id="selbar" hidden>
+    <button id="sel-del" type="button">Xóa</button>
+    <button id="sel-clear" type="button">Bỏ chọn</button>
+  </div>
   <script src="vendor/lz-string.min.js"></script>
   <script type="module" src="src/app.js"></script>
 </body>

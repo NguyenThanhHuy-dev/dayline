@@ -5,6 +5,8 @@ import { moveRange } from './edit.js';
 export const DEFAULT_VIEW = { px: 1.5, full: false };
 const SHORT_PX = 60; // items shorter than this (in px) render on one line
 const DRAG_PX = 4; // pointer travel below this counts as a click
+const LONG_PRESS_MS = 350; // touch: hold this long (moving < LONG_PRESS_SLOP px) to start dragging
+const LONG_PRESS_SLOP = 8;
 
 // Greedy lanes per cluster of overlapping items (items sorted by start). -> [{ lane, lanes }] aligned with items
 export function assignLanes(items) {
@@ -25,26 +27,43 @@ export function assignLanes(items) {
 }
 
 // Vertical pointer-drag of a block; commits once on release, a short press stays a click.
+// Mouse/pen drag after DRAG_PX; touch needs a long press (LONG_PRESS_MS) so a finger can still scroll the page.
 function enableDrag(div, it, view, ui) {
-  div.style.touchAction = 'none';
+  div.style.touchAction = 'pan-y';
   div.addEventListener('pointerdown', (e) => {
     if (e.button || e.target.closest('.del')) return;
-    const y0 = e.clientY;
-    let moved = false;
+    const y0 = e.clientY, x0 = e.clientX;
+    const touch = e.pointerType === 'touch';
+    let moved = false, armed = !touch, timer;
+    const stopScroll = (ev) => ev.preventDefault(); // non-passive: only after long press, scrolling hasn't started yet
+    if (touch) {
+      timer = setTimeout(() => {
+        armed = true;
+        div.classList.add('dragging');
+        document.addEventListener('touchmove', stopScroll, { passive: false });
+        navigator.vibrate?.(10);
+      }, LONG_PRESS_MS);
+    }
     try { div.setPointerCapture(e.pointerId); } catch { /* pointer already gone: keep dragging without capture */ }
     const delta = (ev) => moveRange(it.start, it.end, (ev.clientY - y0) / view.px);
     const onMove = (ev) => {
+      if (!armed) {
+        if (Math.hypot(ev.clientX - x0, ev.clientY - y0) > LONG_PRESS_SLOP) clearTimeout(timer); // finger is scrolling
+        return;
+      }
       if (!moved && Math.abs(ev.clientY - y0) < DRAG_PX) return;
       moved = true;
       div.classList.add('dragging');
       div.style.transform = `translateY(${(delta(ev).start - it.start) * view.px}px)`;
     };
     const end = (ev) => {
+      clearTimeout(timer);
+      document.removeEventListener('touchmove', stopScroll);
       div.removeEventListener('pointermove', onMove);
       div.removeEventListener('pointerup', end);
       div.removeEventListener('pointercancel', end);
-      if (!moved) return;
       div.classList.remove('dragging');
+      if (!moved) return;
       div.style.transform = '';
       div.addEventListener('click', (c) => c.stopImmediatePropagation(), { capture: true, once: true });
       const r = delta(ev);
@@ -54,6 +73,7 @@ function enableDrag(div, it, view, ui) {
     div.addEventListener('pointerup', end);
     div.addEventListener('pointercancel', end);
   });
+  if (matchMedia('(pointer: coarse)').matches) div.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
 // ui: { selectedLine, onSelect(line), onDelete(line), onMove(line, start, end) } - interactive only, exportPng ignores it

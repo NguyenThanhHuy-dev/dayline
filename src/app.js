@@ -30,6 +30,7 @@ function update() {
 
   const group = groups.find((g) => g.name === selected);
   if (!group?.items.some((i) => i.line === selLine)) selLine = null;
+  $('selbar').hidden = selLine === null;
   renderTimeline($('timeline'), group, view, { selectedLine: selLine, onSelect: select, onDelete: deleteLine, onMove: moveLine });
   $('stats').replaceChildren(...(group ? statsByType(group) : []).map(({ type, minutes }) => {
     const item = document.createElement('li');
@@ -42,6 +43,18 @@ function update() {
   const li = (cls, msg) => Object.assign(document.createElement('li'), { className: cls, textContent: msg });
   $('issues').replaceChildren(...errors.map((e) => li('err', e.msg)), ...warnings.map((w) => li('warn', w.msg)));
 }
+
+$('sel-del').addEventListener('click', () => deleteLine(selLine));
+$('sel-clear').addEventListener('click', () => select(null));
+
+// mobile pane switch (CSS shows both panes on desktop)
+let pane;
+function setPane(name) {
+  pane = name;
+  document.body.dataset.pane = name;
+  for (const b of document.querySelectorAll('#panes button')) b.ariaSelected = String(b.dataset.pane === name);
+}
+for (const b of document.querySelectorAll('#panes button')) b.addEventListener('click', () => setPane(b.dataset.pane));
 
 function select(line) { selLine = line; update(); }
 function deleteLine(line) {
@@ -140,6 +153,7 @@ $('full').checked = view.full;
 const fetchText = (p) => fetch(p).then((r) => (r.ok ? r.text() : ''));
 const shared = /^#d=(.+)$/.exec(location.hash);
 src.value = (shared && LZString.decompressFromEncodedURIComponent(shared[1])) || localStorage.getItem(KEY) || (await Promise.all(['examples/weekday.txt', 'examples/weekend.txt'].map(fetchText).map((p) => p.catch(() => '')))).join('\n');
+setPane(src.value.trim() ? 'view' : 'edit');
 history = createHistory(src.value);
 syncButtons();
 update();
