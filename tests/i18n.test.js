@@ -9,6 +9,12 @@ test('vi and en have exactly the same keys', () => {
   for (const l of ['vi', 'en']) for (const [k, v] of Object.entries(DICT[l])) assert.ok(v.trim(), `${l}.${k}`);
 });
 
+test('export dialog strings exist in both languages', () => {
+  for (const k of ['title', 'choose', 'all', 'none', 'combine', 'separate', 'go', 'cancel', 'empty']) {
+    for (const l of ['vi', 'en']) assert.ok(DICT[l][`export.${k}`], `${l}.export.${k}`);
+  }
+});
+
 test('every type has a label in both languages', () => {
   for (const l of ['vi', 'en']) for (const ty of TYPES) assert.ok(DICT[l][`type.${ty}`], `${l}.type.${ty}`);
 });

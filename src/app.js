@@ -1,5 +1,5 @@
 import { parse, TYPES, formatIssue, groupLabel } from './parser.js';
-import { renderTimeline, exportPng, DEFAULT_VIEW } from './render.js';
+import { renderTimeline, drawGroups, downloadCanvases, DEFAULT_VIEW } from './render.js';
 import { buildPrompt } from './prompt.js';
 import { createHistory } from './history.js';
 import { removeLine, resolveRange, applyEdits } from './edit.js';
@@ -176,9 +176,34 @@ $('share').addEventListener('click', async (e) => {
   flash(btn, 'flash.linkCopied');
 });
 
-$('png').addEventListener('click', () => {
-  const g = parse(src.value).groups.find((x) => x.name === selected);
-  if (g) exportPng(g, view, groupLabel(g, t));
+// PNG export dialog: pick groups (default: the current one), combine into one image or one file per group
+const exportGroups = () => parse(src.value).groups.map((g) => ({ ...g, label: groupLabel(g, t) }));
+const exportBoxes = () => [...document.querySelectorAll('#export-list input:not(:disabled)')];
+const syncExport = () => { $('export-go').disabled = !exportBoxes().some((b) => b.checked); };
+function openExport() {
+  $('export-list').replaceChildren(...exportGroups().map((g) => {
+    const row = document.createElement('label');
+    const box = Object.assign(document.createElement('input'), { type: 'checkbox', value: g.name, disabled: !g.items.length, checked: g.items.length > 0 && g.name === selected });
+    box.addEventListener('change', syncExport);
+    row.append(box, Object.assign(document.createElement('span'), { textContent: g.label }));
+    if (!g.items.length) row.append(Object.assign(document.createElement('small'), { textContent: t('export.empty') }));
+    return row;
+  }));
+  syncExport();
+  $('export-dlg').showModal();
+}
+$('png').addEventListener('click', openExport);
+$('export-all').addEventListener('click', () => { for (const b of exportBoxes()) b.checked = true; syncExport(); });
+$('export-none').addEventListener('click', () => { for (const b of exportBoxes()) b.checked = false; syncExport(); });
+$('export-cancel').addEventListener('click', () => $('export-dlg').close());
+$('export-go').addEventListener('click', async () => {
+  const names = new Set(exportBoxes().filter((b) => b.checked).map((b) => b.value));
+  const chosen = exportGroups().filter((g) => names.has(g.name)).map((g) => ({ ...g, name: g.label }));
+  $('export-dlg').close();
+  if (!chosen.length) return;
+  const combine = $('export-combine').checked && chosen.length > 1;
+  const cvs = drawGroups(chosen, view, { combine });
+  await downloadCanvases(cvs, combine ? ['dayline'] : chosen.map((g) => g.name));
 });
 
 const PX100 = DEFAULT_VIEW.px; // 100% zoom

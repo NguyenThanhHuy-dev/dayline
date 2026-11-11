@@ -2,6 +2,7 @@ import { TYPES } from './parser.js';
 import { formatTime } from './serializer.js';
 import { moveRange } from './edit.js';
 import { t } from './i18n.js';
+import { EXPORT, unionRange, exportLayout, fileNames } from './exportLayout.js';
 
 export const DEFAULT_VIEW = { px: 1.5, full: false };
 const SHORT_PX = 60; // items shorter than this (in px) render on one line
@@ -94,7 +95,7 @@ function enableResize(grip, edge, it, view, ui, div, selected) {
   });
 }
 
-// ui: { selectedLine, onSelect(line), onDelete(line), onMove(line, start, end) (body move and edge resize) } - interactive only, exportPng ignores it
+// ui: { selectedLine, onSelect(line), onDelete(line), onMove(line, start, end) (body move and edge resize) } - interactive only, export ignores it
 export function renderTimeline(el, group, view = DEFAULT_VIEW, ui = {}) {
   el.replaceChildren();
   if (!group || !group.items.length) {
@@ -159,14 +160,22 @@ export function layout(group, full = false) {
   return { items, t0, t1 };
 }
 
-// Draws the group on a canvas (same geometry as the DOM timeline) and downloads it as PNG.
-export function exportPng(group, view = DEFAULT_VIEW, title = group?.name) {
-  if (!group?.items.length) return;
-  const { items, t0, t1 } = layout(group, view.full);
-  const W = 560, L = 64, TOP = 56, S = 2;
+// Draws groups (names already display-ready) on canvases with the same geometry as the DOM timeline.
+// combine: one canvas, groups as columns on a shared hour axis; otherwise one canvas per group. Empty groups are skipped.
+export function drawGroups(groups, view = DEFAULT_VIEW, { combine = false } = {}) {
+  const list = groups.filter((g) => g?.items.length);
+  const sets = combine && list.length ? [list] : list.map((g) => [g]);
+  return sets.map((set) => drawSet(set, view, set.length > 1));
+}
+
+function drawSet(set, view, combined) {
+  const { L, TOP } = EXPORT, S = 2;
+  const range = unionRange(set, view.full);
+  const { t0, t1 } = range;
+  const lay = exportLayout(set.length, range, view.px);
   const cv = document.createElement('canvas');
-  cv.width = W * S;
-  cv.height = (TOP + (t1 - t0) * view.px + 16) * S;
+  cv.width = lay.W * S;
+  cv.height = lay.H * S;
   const ctx = cv.getContext('2d');
   ctx.scale(S, S);
   const css = getComputedStyle(document.documentElement);
@@ -176,27 +185,46 @@ export function exportPng(group, view = DEFAULT_VIEW, title = group?.name) {
   const SERIF = "'Iowan Old Style', 'Palatino Linotype', Georgia, serif";
 
   ctx.fillStyle = v('--bg');
-  ctx.fillRect(0, 0, W, cv.height / S);
-  ctx.fillStyle = v('--fg');
-  font(400, 26, SERIF);
-  ctx.fillText(title, 16, 34);
-
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = v('--fg');
-  ctx.fillRect(L, TOP, 2, (t1 - t0) * view.px);
-  font(400, 12, MONO);
-  for (let m = t0; m <= t1; m += 60) {
-    const y = TOP + (m - t0) * view.px;
+  ctx.fillRect(0, 0, lay.W, lay.H);
+  for (let r = 0; r < lay.rows; r++) { // one hour axis per row (same range, so columns align)
+    const y0 = r * lay.rowH;
+    ctx.textBaseline = 'middle';
     ctx.fillStyle = v('--fg');
-    ctx.textAlign = 'right';
-    ctx.fillText(formatTime(m), L - 14, y);
-    ctx.fillRect(L - 8, y - 1, 14, 2);
+    ctx.fillRect(L, y0 + TOP, 2, (t1 - t0) * view.px);
+    font(400, 12, MONO);
+    for (let m = t0; m <= t1; m += 60) {
+      const y = y0 + TOP + (m - t0) * view.px;
+      ctx.textAlign = 'right';
+      ctx.fillText(formatTime(m), L - 14, y);
+      ctx.fillRect(L - 8, y - 1, 14, 2);
+    }
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    if (combined) { // small brand mark in the axis gutter
+      ctx.fillStyle = v('--muted');
+      font(400, 12, SERIF);
+      ctx.fillText('Dayline', 12, y0 + 34);
+    }
   }
+  set.forEach((g, i) => {
+    const { x: cx, y: cy } = lay.cells[i];
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = v('--fg');
+    font(400, combined ? 22 : 26, SERIF);
+    ctx.fillText(g.name, combined ? cx + 18 : 16, cy + 34, lay.colW - 30);
+    drawColumn(ctx, g, cx, cy, lay.colW, t0, view, v, font);
+  });
+  return cv;
+}
+
+function drawColumn(ctx, group, cx, cy, colW, t0, view, v, font) {
+  const MONO = 'ui-monospace, Menlo, Consolas, monospace';
+  ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
-  for (const it of items) {
-    const y = TOP + (it.start - t0) * view.px;
+  for (const it of layout(group, view.full).items) {
+    const y = cy + EXPORT.TOP + (it.start - t0) * view.px;
     const h = (it.end - it.start) * view.px;
-    const x = L + 18, w = W - x - 12;
+    const x = cx + 18, w = colW - 30;
     const ty = TYPES.includes(it.type) ? it.type : 'unknown';
     ctx.save();
     ctx.beginPath();
@@ -208,7 +236,7 @@ export function exportPng(group, view = DEFAULT_VIEW, title = group?.name) {
       ctx.strokeStyle = v('--bg');
       for (let d = -h; d < w; d += 10) { ctx.beginPath(); ctx.moveTo(x + d, y + h); ctx.lineTo(x + d + h, y); ctx.stroke(); }
     }
-    const short = (it.end - it.start) * view.px < SHORT_PX;
+    const short = h < SHORT_PX;
     ctx.fillStyle = v(`--a-${ty}`);
     ctx.beginPath();
     ctx.roundRect(x + 11, short ? y + 6 : y + 10, 3, short ? h - 12 : Math.min(34, h - 20), 2);
@@ -220,25 +248,32 @@ export function exportPng(group, view = DEFAULT_VIEW, title = group?.name) {
       ctx.fillText(time, x + 24, y + h / 2);
       const tw = ctx.measureText(time).width;
       font(700, 14);
-      ctx.fillText(it.title, x + 24 + tw + 10, y + h / 2);
+      ctx.fillText(it.title, x + 24 + tw + 10, y + h / 2, w - 24 - tw - 10 - 8);
     } else {
       font(400, 12, MONO);
       ctx.fillText(time, x + 24, y + 17);
       font(700, 16);
-      ctx.fillText(it.title, x + 24, y + 38);
+      ctx.fillText(it.title, x + 24, y + 38, w - 36);
       font(400, 12);
       ctx.fillStyle = v('--muted');
-      it.notes.forEach((n, k) => ctx.fillText(n, x + 24, y + 58 + k * 16));
+      it.notes.forEach((n, k) => ctx.fillText(n, x + 24, y + 58 + k * 16, w - 36));
     }
     ctx.restore();
   }
-  cv.toBlob((blob) => {
+}
+
+// Downloads canvases as PNGs one after another (small delay so browsers do not block multiple downloads).
+export async function downloadCanvases(cvs, names, delay = 150) {
+  const files = fileNames(names);
+  for (let i = 0; i < cvs.length; i++) {
+    const blob = await new Promise((res) => cvs[i].toBlob(res));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${title.replace(/[^\p{L}\p{N}]+/gu, '-')}.png`;
+    a.download = files[i];
     a.click();
-    URL.revokeObjectURL(a.href);
-  });
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    if (i < cvs.length - 1) await new Promise((r) => setTimeout(r, delay));
+  }
 }
 
 function span(cls, text) {

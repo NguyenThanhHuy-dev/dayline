@@ -95,6 +95,23 @@
     <ul id="syntax-body"></ul>
     <form method="dialog"><button class="outline" data-i18n="syntax.close">Close</button></form>
   </dialog>
+  <dialog id="export-dlg" aria-labelledby="export-title">
+    <h2 id="export-title" data-i18n="export.title">Export PNG</h2>
+    <p class="hint" data-i18n="export.choose">Choose days to export</p>
+    <div class="row">
+      <button id="export-all" class="link" type="button" data-i18n="export.all">Select all</button>
+      <button id="export-none" class="link" type="button" data-i18n="export.none">Select none</button>
+    </div>
+    <div id="export-list" role="group" data-i18n-aria-label="export.choose"></div>
+    <fieldset>
+      <label><input id="export-combine" type="radio" name="export-mode" checked> <span data-i18n="export.combine">Combine into one image</span></label>
+      <label><input id="export-separate" type="radio" name="export-mode"> <span data-i18n="export.separate">One image per day</span></label>
+    </fieldset>
+    <div class="actions">
+      <button id="export-cancel" class="plain" type="button" data-i18n="export.cancel">Cancel</button>
+      <button id="export-go" class="outline" type="button" data-i18n="export.go">Export</button>
+    </div>
+  </dialog>
   <div id="selbar" hidden>
     <button id="sel-del" type="button" data-i18n="btn.delete">Delete</button>
     <button id="sel-clear" type="button" data-i18n="btn.deselect">Deselect</button>
