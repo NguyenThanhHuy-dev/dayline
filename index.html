@@ -3,45 +3,49 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>dayline</title>
+  <title data-i18n="doc.title">dayline - daily schedule</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <h1>dayline</h1>
+    <div id="lang" role="group" data-i18n-aria-label="lang.switch">
+      <button type="button" data-lang="vi">VI</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
     <div class="actions">
-      <button id="undo" type="button" title="Ctrl+Z">Hoàn tác</button>
-      <button id="redo" type="button" title="Ctrl+Shift+Z">Làm lại</button>
-      <button id="revert" type="button">Về bản gốc</button>
-      <button id="copy-prompt" type="button">Copy prompt mẫu</button>
-      <button id="share" type="button">Copy link chia sẻ</button>
-      <button id="png" type="button">Xuất PNG</button>
-      <label class="btn">Tải file .txt<input id="file" type="file" accept=".txt,text/plain" hidden></label>
+      <button id="undo" type="button" title="Ctrl+Z" data-i18n="btn.undo">Undo</button>
+      <button id="redo" type="button" title="Ctrl+Shift+Z" data-i18n="btn.redo">Redo</button>
+      <button id="revert" type="button" data-i18n="btn.revert">Revert to original</button>
+      <button id="copy-prompt" type="button" data-i18n="btn.copyPrompt">Copy prompt template</button>
+      <button id="share" type="button" data-i18n="btn.share">Copy share link</button>
+      <button id="png" type="button" data-i18n="btn.png">Export PNG</button>
+      <label class="btn"><span data-i18n="btn.file">Load .txt file</span><input id="file" type="file" accept=".txt,text/plain" hidden></label>
     </div>
   </header>
   <nav id="panes" role="tablist">
-    <button id="pane-edit" type="button" role="tab" data-pane="edit">Soạn thảo</button>
-    <button id="pane-view" type="button" role="tab" data-pane="view">Thời gian biểu</button>
+    <button id="pane-edit" type="button" role="tab" data-pane="edit" data-i18n="pane.edit">Edit</button>
+    <button id="pane-view" type="button" role="tab" data-pane="view" data-i18n="pane.view">Timeline</button>
   </nav>
   <main>
     <section class="editor">
-      <textarea id="src" spellcheck="false" placeholder="Dán thời gian biểu vào đây…"></textarea>
+      <textarea id="src" spellcheck="false" data-i18n-placeholder="editor.placeholder"></textarea>
       <ul id="issues" aria-live="polite"></ul>
     </section>
     <section class="view">
       <div id="pills" role="tablist"></div>
       <div class="toolbar">
-        <label>Zoom <input id="zoom" type="range" min="0.5" max="4" step="0.1"></label>
-        <label><input id="full" type="checkbox"> Hiện đủ 24h</label>
+        <label><span data-i18n="toolbar.zoom">Zoom</span> <input id="zoom" type="range" min="0.5" max="4" step="0.1"></label>
+        <label><input id="full" type="checkbox"> <span data-i18n="toolbar.full">Show full 24h</span></label>
       </div>
       <ul id="stats"></ul>
       <div id="timeline"></div>
     </section>
   </main>
   <div id="selbar" hidden>
-    <button id="sel-del" type="button">Xóa</button>
-    <button id="sel-clear" type="button">Bỏ chọn</button>
+    <button id="sel-del" type="button" data-i18n="btn.delete">Delete</button>
+    <button id="sel-clear" type="button" data-i18n="btn.deselect">Deselect</button>
   </div>
   <script src="vendor/lz-string.min.js"></script>
   <script type="module" src="src/app.js"></script>

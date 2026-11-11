@@ -1,0 +1,14 @@
+# Mon-Fri
+06:45-07:45 | personal | Wake up, stretch, get ready | Stretch for 10 minutes
+07:45-08:30 | commute | Commute to work
+08:30-12:00 | work | Work
+12:00-13:00 | meal | Lunch
+13:00-15:30 | work | Work
+15:30-15:45 | meal | Snack
+15:45-17:30 | work | Work
+17:30-18:30 | commute | Commute home
+18:30-19:30 | meal | Dinner
+19:30-21:15 | study | Study / hobby / date | Pick one depending on the day
+21:15-21:30 | chores | Tidy up | About 10 minutes
+21:30-22:45 | relax | Call partner / games
+22:45-24:00 | sleep | Sleep

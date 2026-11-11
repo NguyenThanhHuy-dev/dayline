@@ -13,12 +13,23 @@ export function parseTime(s) {
 }
 
 // shortcut: no support for ranges crossing midnight (use two lines), when needed upgrade here
+// Display name of a group (auto-named groups are translated)
+export const groupLabel = (g, t) => (g.auto ? t(`group.${g.auto}`) : g.name);
+
+// issue {line, code, params} -> message in the language of `t`
+export function formatIssue(issue, t) {
+  const { auto, group, ...rest } = issue.params;
+  const p = { line: issue.line, ...rest };
+  if (group !== undefined) p.group = groupLabel({ name: group, auto }, t);
+  return t(`issue.${issue.code}`, p);
+}
+
 function parseRange(s) {
   const parts = s.split(/\s*[-–—]\s*/);
-  if (parts.length !== 2) return 'khung giờ phải có dạng HH:MM-HH:MM';
+  if (parts.length !== 2) return { code: 'rangeFormat', params: {} };
   const [a, b] = parts.map(parseTime);
-  if (a === null) return `giờ bắt đầu không hợp lệ: "${parts[0]}"`;
-  if (b === null) return `giờ kết thúc không hợp lệ: "${parts[1]}"`;
+  if (a === null) return { code: 'badStart', params: { value: parts[0] } };
+  if (b === null) return { code: 'badEnd', params: { value: parts[1] } };
   return [a, b];
 }
 
@@ -35,27 +46,28 @@ export function parse(text) {
 
     const h = /^#+\s*(.*)$/.exec(line);
     if (h) {
-      cur = { name: h[1].trim() || 'Không tên', items: [] };
+      const name = h[1].trim();
+      cur = name ? { name, items: [] } : { name: 'Untitled', auto: 'untitled', items: [] }; // auto: UI shows a translated label
       groups.push(cur);
       return;
     }
 
-    const err = (m) => errors.push({ line: n, msg: `Dòng ${n}: ${m}` });
+    const err = (code, params = {}) => errors.push({ line: n, code, params });
     const f = line.split('|').map((s) => s.trim());
-    if (f.length < 3) return err('thiếu trường (cần: giờ | loại | tiêu đề)');
+    if (f.length < 3) return err('fields');
     const range = parseRange(f[0]);
-    if (typeof range === 'string') return err(range);
+    if (!Array.isArray(range)) return err(range.code, range.params);
     const [start, end] = range;
-    if (end < start) return err('giờ kết thúc nhỏ hơn giờ bắt đầu');
-    if (end === start) return err('giờ kết thúc bằng giờ bắt đầu');
-    if (!f[2]) return err('thiếu tiêu đề');
+    if (end < start) return err('endBeforeStart');
+    if (end === start) return err('endEqualsStart');
+    if (!f[2]) return err('noTitle');
 
     const type = f[1].toLowerCase();
     if (!TYPES.includes(type)) {
-      warnings.push({ line: n, msg: `Dòng ${n}: loại lạ "${f[1]}", tô màu xám` });
+      warnings.push({ line: n, code: 'unknownType', params: { type: f[1] } });
     }
     if (!cur) {
-      cur = { name: 'Mặc định', items: [] };
+      cur = { name: 'Default', auto: 'default', items: [] };
       groups.push(cur);
     }
     cur.items.push({ start, end, type, title: f[2], notes: f.slice(3).filter(Boolean), line: n });
@@ -68,13 +80,14 @@ export function parse(text) {
 
 function checkContinuity(group, warnings) {
   const items = [...group.items].sort((a, b) => a.start - b.start);
+  const who = { group: group.name, auto: group.auto };
   let prev = null; // item with the latest end so far
   for (const it of items) {
     if (prev) {
       if (it.start < prev.end) {
-        warnings.push({ line: it.line, msg: `Dòng ${it.line}: chồng giờ với dòng ${prev.line} (${group.name})` });
+        warnings.push({ line: it.line, code: 'overlap', params: { with: prev.line, ...who } });
       } else if (it.start > prev.end) {
-        warnings.push({ line: it.line, msg: `Dòng ${it.line}: hở ${it.start - prev.end} phút sau dòng ${prev.line} (${group.name})` });
+        warnings.push({ line: it.line, code: 'gap', params: { minutes: it.start - prev.end, after: prev.line, ...who } });
       }
     }
     if (!prev || it.end > prev.end) prev = it;

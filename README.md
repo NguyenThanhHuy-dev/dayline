@@ -1,5 +1,9 @@
 # dayline
 
+**English:** a frontend-only web app. Paste or load a plain-text daily schedule and see it as a vertical timeline (no backend, no build step). The UI is available in Vietnamese and English: use the **VI | EN** switch in the header (default follows your browser language, choice is saved). The text format, type names (`work`, `meal`, ...) and group names stay as you write them. Run with `python -m http.server 8000`, test with `npm test`. English examples: `examples/weekday.en.txt`, `examples/weekend.en.txt`. Translations live in `src/i18n.js`; parser issues are structured (`{line, code, params}`) and formatted by the UI.
+
+**Tiếng Việt:**
+
 Web app thuần frontend: dán hoặc tải file text thời gian biểu, xem dạng timeline dọc. Không backend, không bước build.
 
 ## Chạy
@@ -34,7 +38,7 @@ Ví dụ: `examples/weekday.txt`, `examples/weekend.txt`.
 
 ## Cấu trúc
 
-`parser.js` (text → model), `serializer.js` (model → text), `render.js`, `stats.js`, `prompt.js`, `app.js`. `vendor/lz-string.min.js` là bản copy lz-string 1.5.0 (MIT).
+`i18n.js` (vi/en), `parser.js` (text → model), `serializer.js` (model → text), `render.js`, `stats.js`, `prompt.js`, `app.js`. `vendor/lz-string.min.js` là bản copy lz-string 1.5.0 (MIT).
 
 ## Quy trình làm việc
 

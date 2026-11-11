@@ -1,6 +1,7 @@
 import { TYPES } from './parser.js';
 import { formatTime } from './serializer.js';
 import { moveRange } from './edit.js';
+import { t } from './i18n.js';
 
 export const DEFAULT_VIEW = { px: 1.5, full: false };
 const SHORT_PX = 60; // items shorter than this (in px) render on one line
@@ -81,7 +82,7 @@ export function renderTimeline(el, group, view = DEFAULT_VIEW, ui = {}) {
   el.replaceChildren();
   if (!group || !group.items.length) {
     el.style.height = '';
-    el.textContent = 'Chưa có dữ liệu.';
+    el.textContent = t('timeline.empty');
     return;
   }
   const { items, t0, t1 } = layout(group, view.full);
@@ -118,7 +119,7 @@ export function renderTimeline(el, group, view = DEFAULT_VIEW, ui = {}) {
       const x = document.createElement('button');
       x.type = 'button';
       x.className = 'del';
-      x.title = 'Xóa khối này';
+      x.title = t('timeline.deleteBlock');
       x.textContent = '×';
       x.onclick = (e) => { e.stopPropagation(); ui.onDelete?.(it.line); };
       div.append(x);
@@ -137,7 +138,7 @@ export function layout(group, full = false) {
 }
 
 // Draws the group on a canvas (same geometry as the DOM timeline) and downloads it as PNG.
-export function exportPng(group, view = DEFAULT_VIEW) {
+export function exportPng(group, view = DEFAULT_VIEW, title = group?.name) {
   if (!group?.items.length) return;
   const { items, t0, t1 } = layout(group, view.full);
   const W = 520, L = 56, TOP = 44, S = 2;
@@ -154,7 +155,7 @@ export function exportPng(group, view = DEFAULT_VIEW) {
   ctx.fillRect(0, 0, W, cv.height / S);
   ctx.fillStyle = v('--fg');
   font(700, 18);
-  ctx.fillText(group.name, 12, 28);
+  ctx.fillText(title, 12, 28);
 
   ctx.textBaseline = 'middle';
   font(400, 11);
@@ -197,7 +198,7 @@ export function exportPng(group, view = DEFAULT_VIEW) {
   cv.toBlob((blob) => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${group.name.replace(/[^\p{L}\p{N}]+/gu, '-')}.png`;
+    a.download = `${title.replace(/[^\p{L}\p{N}]+/gu, '-')}.png`;
     a.click();
     URL.revokeObjectURL(a.href);
   });

@@ -1,0 +1,24 @@
+# Saturday
+07:30-08:30 | personal | Wake up, get ready
+08:30-09:15 | meal | Breakfast
+09:15-11:30 | study | Study
+11:30-12:30 | exercise | Run
+12:30-13:30 | meal | Lunch
+13:30-17:30 | relax | Go out / date
+17:30-19:00 | chores | Laundry, clean the house
+19:00-20:00 | meal | Dinner
+20:00-23:00 | relax | Movies / games
+23:00-24:00 | sleep | Sleep
+
+# Sunday
+08:00-09:00 | personal | Wake up, get ready
+09:00-09:45 | meal | Breakfast
+09:45-11:30 | exercise | Cycling
+11:30-12:30 | chores | Grocery shopping
+12:30-13:30 | meal | Lunch
+13:30-16:00 | relax | Rest
+16:00-18:00 | study | Review for next week
+18:00-19:00 | meal | Dinner
+19:00-21:30 | chores | Prepare for the new week
+21:30-22:30 | relax | Call partner
+22:30-24:00 | sleep | Sleep

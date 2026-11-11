@@ -15,7 +15,12 @@
 * { box-sizing: border-box; }
 body { margin: 0; font: 15px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
 header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 20px; border-bottom: 1px solid var(--line); }
-h1 { margin: 0; font-size: 18px; }
+h1 { margin: 0 auto 0 0; font-size: 18px; }
+#lang { display: flex; }
+#lang button { border-radius: 0; padding: 6px 10px; }
+#lang button:first-child { border-radius: 8px 0 0 8px; }
+#lang button:last-child { border-radius: 0 8px 8px 0; border-left: 0; }
+#lang button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 button, .btn, .pill { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
 button:hover, .btn:hover, .pill:hover { border-color: var(--muted); }
