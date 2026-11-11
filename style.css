@@ -48,3 +48,5 @@ button:disabled { opacity: .45; cursor: default; }
 .item { cursor: pointer; }
 .item.selected { outline: 2px solid var(--fg); outline-offset: 1px; z-index: 1; }
 .item .del { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; padding: 0; line-height: 1; border-radius: 50%; }
+.item { user-select: none; -webkit-user-select: none; }
+.item.dragging { opacity: .8; z-index: 2; cursor: grabbing; }

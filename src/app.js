@@ -2,7 +2,7 @@ import { parse, TYPES } from './parser.js';
 import { renderTimeline, exportPng, DEFAULT_VIEW } from './render.js';
 import { buildPrompt } from './prompt.js';
 import { createHistory } from './history.js';
-import { removeLine } from './edit.js';
+import { removeLine, setLineTimes } from './edit.js';
 import { statsByType, formatDuration } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
@@ -30,7 +30,7 @@ function update() {
 
   const group = groups.find((g) => g.name === selected);
   if (!group?.items.some((i) => i.line === selLine)) selLine = null;
-  renderTimeline($('timeline'), group, view, { selectedLine: selLine, onSelect: select, onDelete: deleteLine });
+  renderTimeline($('timeline'), group, view, { selectedLine: selLine, onSelect: select, onDelete: deleteLine, onMove: moveLine });
   $('stats').replaceChildren(...(group ? statsByType(group) : []).map(({ type, minutes }) => {
     const item = document.createElement('li');
     const sw = document.createElement('i');
@@ -48,6 +48,13 @@ function deleteLine(line) {
   flush();
   selLine = null;
   src.value = removeLine(src.value, line);
+  changed();
+  flush();
+}
+
+function moveLine(line, start, end) {
+  flush();
+  src.value = setLineTimes(src.value, line, start, end);
   changed();
   flush();
 }

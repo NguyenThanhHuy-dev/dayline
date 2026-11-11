@@ -1,11 +1,62 @@
 import { TYPES } from './parser.js';
 import { formatTime } from './serializer.js';
+import { moveRange } from './edit.js';
 
 export const DEFAULT_VIEW = { px: 1.5, full: false };
 const SHORT_PX = 60; // items shorter than this (in px) render on one line
+const DRAG_PX = 4; // pointer travel below this counts as a click
 
-// shortcut: overlapping items are drawn on top of each other (a warning is shown), when needed add lanes
-// ui: { selectedLine, onSelect(line), onDelete(line) } - interactive only, exportPng ignores it
+// Greedy lanes per cluster of overlapping items (items sorted by start). -> [{ lane, lanes }] aligned with items
+export function assignLanes(items) {
+  const out = [];
+  let from = 0, laneEnds = [], clusterEnd = -1;
+  const close = (to) => { for (let k = from; k < to; k++) out[k].lanes = laneEnds.length; };
+  items.forEach((it, k) => {
+    const fresh = it.start >= clusterEnd;
+    if (fresh) { close(k); from = k; laneEnds = []; }
+    let lane = laneEnds.findIndex((e) => e <= it.start);
+    if (lane < 0) lane = laneEnds.length;
+    laneEnds[lane] = it.end;
+    clusterEnd = fresh ? it.end : Math.max(clusterEnd, it.end);
+    out.push({ lane, lanes: 1 });
+  });
+  close(items.length);
+  return out;
+}
+
+// Vertical pointer-drag of a block; commits once on release, a short press stays a click.
+function enableDrag(div, it, view, ui) {
+  div.style.touchAction = 'none';
+  div.addEventListener('pointerdown', (e) => {
+    if (e.button || e.target.closest('.del')) return;
+    const y0 = e.clientY;
+    let moved = false;
+    try { div.setPointerCapture(e.pointerId); } catch { /* pointer already gone: keep dragging without capture */ }
+    const delta = (ev) => moveRange(it.start, it.end, (ev.clientY - y0) / view.px);
+    const onMove = (ev) => {
+      if (!moved && Math.abs(ev.clientY - y0) < DRAG_PX) return;
+      moved = true;
+      div.classList.add('dragging');
+      div.style.transform = `translateY(${(delta(ev).start - it.start) * view.px}px)`;
+    };
+    const end = (ev) => {
+      div.removeEventListener('pointermove', onMove);
+      div.removeEventListener('pointerup', end);
+      div.removeEventListener('pointercancel', end);
+      if (!moved) return;
+      div.classList.remove('dragging');
+      div.style.transform = '';
+      div.addEventListener('click', (c) => c.stopImmediatePropagation(), { capture: true, once: true });
+      const r = delta(ev);
+      if (ev.type === 'pointerup' && r.start !== it.start) ui.onMove(it.line, r.start, r.end);
+    };
+    div.addEventListener('pointermove', onMove);
+    div.addEventListener('pointerup', end);
+    div.addEventListener('pointercancel', end);
+  });
+}
+
+// ui: { selectedLine, onSelect(line), onDelete(line), onMove(line, start, end) } - interactive only, exportPng ignores it
 export function renderTimeline(el, group, view = DEFAULT_VIEW, ui = {}) {
   el.replaceChildren();
   if (!group || !group.items.length) {
@@ -24,15 +75,23 @@ export function renderTimeline(el, group, view = DEFAULT_VIEW, ui = {}) {
     el.append(hour);
   }
 
-  for (const it of items) {
+  const lanes = assignLanes(items);
+  for (const [n, it] of items.entries()) {
     const known = TYPES.includes(it.type);
     const div = document.createElement('div');
     div.className = `item t-${known ? it.type : 'unknown'}${(it.end - it.start) * view.px < SHORT_PX ? ' short' : ''}`;
     div.style.top = `${(it.start - t0) * view.px}px`;
     div.style.height = `${(it.end - it.start) * view.px}px`;
+    const { lane, lanes: count } = lanes[n];
+    if (count > 1) {
+      div.style.left = `calc(8px + (100% - 8px) * ${lane / count})`;
+      div.style.width = `calc((100% - 8px) / ${count})`;
+      div.style.right = 'auto';
+    }
     const time = `${formatTime(it.start)}-${formatTime(it.end)}`;
     div.title = [`${time} ${it.title}`, ...it.notes].join('\n');
     div.append(span('time', time), span('title', it.title), ...it.notes.map((n) => span('note', n)));
+    if (ui.onMove) enableDrag(div, it, view, ui);
     if (ui.onSelect) div.onclick = () => ui.onSelect(it.line);
     if (it.line === ui.selectedLine) {
       div.classList.add('selected');
