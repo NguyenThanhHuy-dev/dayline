@@ -1,0 +1,23 @@
+name: flow
+on:
+  pull_request:
+    branches: [main, staging]
+
+jobs:
+  only-from-staging:
+    if: github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: PR into main must come from staging
+        env:
+          HEAD: ${{ github.head_ref }}
+        run: '[ "$HEAD" = "staging" ] || { echo "::error::Only staging can be merged into main"; exit 1; }'
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
