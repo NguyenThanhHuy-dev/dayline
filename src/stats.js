@@ -6,3 +6,10 @@ export function statsByType(group) {
 }
 
 export const formatDuration = (min) => `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`;
+
+// "1g 30p" (vi) / "1h 30m" (en); zero parts are dropped
+export function formatDurationHuman(min, lang = 'vi') {
+  const [hu, mu] = lang === 'en' ? ['h', 'm'] : ['g', 'p'];
+  const h = Math.floor(min / 60), m = min % 60;
+  return [h && `${h}${hu}`, (m || !h) && `${m}${mu}`].filter(Boolean).join(' ');
+}
