@@ -1,0 +1,35 @@
+# routine-viz
+
+Web app thuần frontend: dán hoặc tải file text thời gian biểu, xem dạng timeline dọc. Không backend, không bước build.
+
+## Chạy
+
+```bash
+python -m http.server 8000
+```
+
+Mở http://localhost:8000. Test parser: `npm test` (node:test, không cần cài gì).
+
+## Cách dùng
+
+1. Bấm **Copy prompt mẫu**, dán vào ChatGPT (hoặc AI khác), thêm routine của bạn ở cuối.
+2. Copy kết quả AI trả về, dán vào ô bên trái (hoặc **Tải file .txt**). Timeline cập nhật ngay.
+3. Chọn nhóm ngày bằng các nút pill. Lỗi/cảnh báo hiện dưới ô nhập, theo số dòng.
+
+## Định dạng
+
+```
+# Thứ 2-6
+06:45-07:45 | personal | Dậy, giãn cơ | ghi chú tùy chọn
+08:30-12:00 | work | Làm việc
+```
+
+- Giờ: `6:30`, `06:30`, `6h30`; dấu `-` hoặc `–`. Dùng `24:00` cho nửa đêm. Khung giờ không vắt qua nửa đêm (tách thành hai dòng).
+- Loại: `personal commute work meal study exercise chores relax sleep`. Loại lạ: tô xám + cảnh báo.
+- Dòng trống, khoảng trắng thừa, rào ``` đều bị bỏ qua.
+
+Ví dụ: `examples/weekday.txt`, `examples/weekend.txt`.
+
+## Cấu trúc
+
+`parser.js` (text → model), `serializer.js` (model → text), `render.js`, `stats.js`, `prompt.js`, `app.js`.

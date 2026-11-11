@@ -1,0 +1,14 @@
+# Thứ 2-6
+06:45-07:45 | personal | Dậy, giãn cơ, vệ sinh cá nhân | Giãn cơ 10 phút
+07:45-08:30 | commute | Đi làm
+08:30-12:00 | work | Làm việc
+12:00-13:00 | meal | Ăn trưa
+13:00-15:30 | work | Làm việc
+15:30-15:45 | meal | Bữa phụ
+15:45-17:30 | work | Làm việc
+17:30-18:30 | commute | Đi về
+18:30-19:30 | meal | Ăn tối
+19:30-21:15 | study | Học / tập / hẹn hò | Chọn một trong ba tùy ngày
+21:15-21:30 | chores | Dọn dẹp | Khoảng 10 phút
+21:30-22:45 | relax | Gọi người yêu / game
+22:45-24:00 | sleep | Ngủ

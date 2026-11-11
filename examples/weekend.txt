@@ -1,0 +1,24 @@
+# Thứ 7
+07:30-08:30 | personal | Dậy, vệ sinh cá nhân
+08:30-09:15 | meal | Ăn sáng
+09:15-11:30 | study | Học / tập
+11:30-12:30 | exercise | Chạy bộ
+12:30-13:30 | meal | Ăn trưa
+13:30-17:30 | relax | Đi chơi / hẹn hò
+17:30-19:00 | chores | Giặt đồ, dọn nhà
+19:00-20:00 | meal | Ăn tối
+20:00-23:00 | relax | Xem phim / game
+23:00-24:00 | sleep | Ngủ
+
+# Chủ nhật
+08:00-09:00 | personal | Dậy, vệ sinh cá nhân
+09:00-09:45 | meal | Ăn sáng
+09:45-11:30 | exercise | Đạp xe
+11:30-12:30 | chores | Đi chợ
+12:30-13:30 | meal | Ăn trưa
+13:30-16:00 | relax | Nghỉ ngơi
+16:00-18:00 | study | Ôn bài tuần tới
+18:00-19:00 | meal | Ăn tối
+19:00-21:30 | chores | Chuẩn bị đồ cho tuần mới
+21:30-22:30 | relax | Gọi người yêu
+22:30-24:00 | sleep | Ngủ

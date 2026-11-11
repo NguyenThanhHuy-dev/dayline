@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>routine-viz</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>routine-viz</h1>
+    <div class="actions">
+      <button id="copy-prompt" type="button">Copy prompt mẫu</button>
+      <label class="btn">Tải file .txt<input id="file" type="file" accept=".txt,text/plain" hidden></label>
+    </div>
+  </header>
+  <main>
+    <section class="editor">
+      <textarea id="src" spellcheck="false" placeholder="Dán thời gian biểu vào đây…"></textarea>
+      <ul id="issues" aria-live="polite"></ul>
+    </section>
+    <section class="view">
+      <div id="pills" role="tablist"></div>
+      <div id="timeline"></div>
+    </section>
+  </main>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
