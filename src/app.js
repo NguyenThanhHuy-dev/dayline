@@ -1,6 +1,7 @@
 import { parse, TYPES } from './parser.js';
 import { renderTimeline, exportPng, DEFAULT_VIEW } from './render.js';
 import { buildPrompt } from './prompt.js';
+import { createHistory } from './history.js';
 import { statsByType, formatDuration } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
@@ -39,15 +40,37 @@ function update() {
   $('issues').replaceChildren(...errors.map((e) => li('err', e.msg)), ...warnings.map((w) => li('warn', w.msg)));
 }
 
-const changed = () => { localStorage.setItem(KEY, src.value); update(); };
-src.addEventListener('input', changed);
+let history = createHistory();
+let timer;
+const syncButtons = () => {
+  $('undo').disabled = !history.canUndo;
+  $('redo').disabled = !history.canRedo;
+  $('revert').disabled = src.value === history.base;
+};
+const changed = () => { localStorage.setItem(KEY, src.value); update(); syncButtons(); };
+const flush = () => { clearTimeout(timer); history.push(src.value); syncButtons(); };
+const restore = (text) => { src.value = text; changed(); };
+const step = (fn) => { flush(); restore(fn()); };
+src.addEventListener('input', () => { changed(); clearTimeout(timer); timer = setTimeout(flush, 400); });
+$('undo').addEventListener('click', () => step(() => history.undo()));
+$('redo').addEventListener('click', () => step(() => history.redo()));
+$('revert').addEventListener('click', () => step(() => history.revert()));
+document.addEventListener('keydown', (e) => {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey) { e.preventDefault(); step(() => history.undo()); }
+  else if ((k === 'z' && e.shiftKey) || (k === 'y' && !e.metaKey)) { e.preventDefault(); step(() => history.redo()); }
+});
 
 $('file').addEventListener('change', async (e) => {
   const f = e.target.files[0];
   if (!f) return;
-  src.value = await f.text();
+  const text = await f.text();
+  flush();
   e.target.value = '';
-  changed();
+  history.push(text);
+  history.mark(text);
+  restore(text);
 });
 
 $('copy-prompt').addEventListener('click', async (e) => {
@@ -91,4 +114,6 @@ $('full').checked = view.full;
 const fetchText = (p) => fetch(p).then((r) => (r.ok ? r.text() : ''));
 const shared = /^#d=(.+)$/.exec(location.hash);
 src.value = (shared && LZString.decompressFromEncodedURIComponent(shared[1])) || localStorage.getItem(KEY) || (await Promise.all(['examples/weekday.txt', 'examples/weekend.txt'].map(fetchText).map((p) => p.catch(() => '')))).join('\n');
+history = createHistory(src.value);
+syncButtons();
 update();
