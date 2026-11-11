@@ -125,11 +125,6 @@ function setView(patch) {
 }
 $('zoom').addEventListener('input', (e) => setView({ px: +e.target.value }));
 $('full').addEventListener('change', (e) => setView({ full: e.target.checked }));
-$('timeline').addEventListener('wheel', (e) => {
-  if (!e.ctrlKey) return;
-  e.preventDefault();
-  setView({ px: view.px * (e.deltaY < 0 ? 1.1 : 0.9) });
-}, { passive: false });
 $('zoom').value = view.px;
 $('full').checked = view.full;
 
