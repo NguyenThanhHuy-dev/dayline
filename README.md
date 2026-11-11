@@ -40,6 +40,10 @@ Ví dụ: `examples/weekday.txt`, `examples/weekend.txt`.
 
 `i18n.js` (vi/en), `parser.js` (text → model), `serializer.js` (model → text), `render.js`, `stats.js`, `prompt.js`, `app.js`. `vendor/lz-string.min.js` là bản copy lz-string 1.5.0 (MIT).
 
+## Phông chữ
+
+IBM Plex Sans (giao diện) và IBM Plex Mono (ô nhập, giờ), tự host trong `assets/fonts/` (woff2, subset latin + vietnamese), giấy phép SIL OFL 1.1 (`assets/fonts/OFL.txt`). Ảnh PNG xuất ra dùng cùng phông. English: IBM Plex fonts are self-hosted in `assets/fonts/` under the OFL.
+
 ## Quy trình làm việc
 
 `feature/*` (tách từ `main`) → PR vào `staging` (test) → PR `staging` vào `main` (deploy). Không push trực tiếp vào `main` và `staging`. CI (`.github/workflows/flow.yml`) chạy `npm test` và chặn PR vào `main` nếu không đến từ `staging`.

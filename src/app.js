@@ -1,5 +1,5 @@
 import { parse, TYPES, formatIssue, groupLabel } from './parser.js';
-import { renderTimeline, drawGroups, downloadCanvases, DEFAULT_VIEW } from './render.js';
+import { renderTimeline, drawGroups, downloadCanvases, loadExportFonts, DEFAULT_VIEW } from './render.js';
 import { buildPrompt } from './prompt.js';
 import { createHistory } from './history.js';
 import { removeLine, resolveRange, applyEdits } from './edit.js';
@@ -202,6 +202,7 @@ $('export-go').addEventListener('click', async () => {
   $('export-dlg').close();
   if (!chosen.length) return;
   const combine = $('export-combine').checked && chosen.length > 1;
+  await loadExportFonts();
   const cvs = drawGroups(chosen, view, { combine });
   await downloadCanvases(cvs, combine ? ['dayline'] : chosen.map((g) => g.name));
 });

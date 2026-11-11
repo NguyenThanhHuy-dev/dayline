@@ -162,6 +162,20 @@ export function layout(group, full = false) {
 
 // Draws groups (names already display-ready) on canvases with the same geometry as the DOM timeline.
 // combine: one canvas, groups as columns on a shared hour axis; otherwise one canvas per group. Empty groups are skipped.
+const SANS = '"IBM Plex Sans", system-ui, sans-serif';
+const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
+const VI_TEST = 'ạ ế ộ ữ Thứ Chủ nhật';
+
+// Makes sure the web fonts used by the canvas are loaded (Vietnamese + latin) before drawing.
+export async function loadExportFonts() {
+  if (!document.fonts) return;
+  await Promise.all([
+    ...[400, 600, 700].map((w) => document.fonts.load(`${w} 16px "IBM Plex Sans"`, VI_TEST)),
+    document.fonts.load('400 12px "IBM Plex Mono"', '0123456789:-'),
+  ]).catch(() => {});
+  await document.fonts.ready;
+}
+
 export function drawGroups(groups, view = DEFAULT_VIEW, { combine = false } = {}) {
   const list = groups.filter((g) => g?.items.length);
   const sets = combine && list.length ? [list] : list.map((g) => [g]);
@@ -180,9 +194,7 @@ function drawSet(set, view, combined) {
   ctx.scale(S, S);
   const css = getComputedStyle(document.documentElement);
   const v = (n) => css.getPropertyValue(n).trim();
-  const font = (w, px, fam = 'system-ui, sans-serif') => { ctx.font = `${w} ${px}px ${fam}`; };
-  const MONO = 'ui-monospace, Menlo, Consolas, monospace';
-  const SERIF = "'Iowan Old Style', 'Palatino Linotype', Georgia, serif";
+  const font = (w, px, fam = SANS) => { ctx.font = `${w} ${px}px ${fam}`; };
 
   ctx.fillStyle = v('--bg');
   ctx.fillRect(0, 0, lay.W, lay.H);
@@ -202,7 +214,7 @@ function drawSet(set, view, combined) {
     ctx.textBaseline = 'alphabetic';
     if (combined) { // small brand mark in the axis gutter
       ctx.fillStyle = v('--muted');
-      font(400, 12, SERIF);
+      font(600, 12);
       ctx.fillText('Dayline', 12, y0 + 34);
     }
   }
@@ -210,7 +222,7 @@ function drawSet(set, view, combined) {
     const { x: cx, y: cy } = lay.cells[i];
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = v('--fg');
-    font(400, combined ? 22 : 26, SERIF);
+    font(700, combined ? 22 : 26);
     ctx.fillText(g.name, combined ? cx + 18 : 16, cy + 34, lay.colW - 30);
     drawColumn(ctx, g, cx, cy, lay.colW, t0, view, v, font);
   });
@@ -218,7 +230,6 @@ function drawSet(set, view, combined) {
 }
 
 function drawColumn(ctx, group, cx, cy, colW, t0, view, v, font) {
-  const MONO = 'ui-monospace, Menlo, Consolas, monospace';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   for (const it of layout(group, view.full).items) {
