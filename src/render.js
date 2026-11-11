@@ -99,7 +99,7 @@ export function renderTimeline(el, group, view = DEFAULT_VIEW, ui = {}) {
   el.replaceChildren();
   if (!group || !group.items.length) {
     el.style.height = '';
-    const img = Object.assign(document.createElement('img'), { src: 'assets/capybara.svg', alt: '' });
+    const img = Object.assign(document.createElement('img'), { src: 'assets/capybara-empty.webp', alt: '' });
     el.append(Object.assign(document.createElement('div'), { className: 'empty' }));
     el.firstChild.append(img, t('timeline.empty'));
     return;
