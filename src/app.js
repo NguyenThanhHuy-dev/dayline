@@ -3,7 +3,7 @@ import { renderTimeline, exportPng, DEFAULT_VIEW } from './render.js';
 import { buildPrompt } from './prompt.js';
 import { createHistory } from './history.js';
 import { removeLine, resolveRange, applyEdits } from './edit.js';
-import { statsByType, formatDuration } from './stats.js';
+import { statsByType, formatDurationHuman } from './stats.js';
 import { t, getLang, setLang } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
@@ -14,11 +14,28 @@ const view = { ...DEFAULT_VIEW, ...JSON.parse(localStorage.getItem(VKEY) ?? '{}'
 let selected = null;
 let selLine = null; // source line of the selected block
 
+const icon = (id) => {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('class', 'ic');
+  s.innerHTML = `<use href="#${id}"/>`;
+  return s;
+};
+
+// gutter follows the textarea scroll; the highlight band sits on the selected block's source line (fixed line height)
+function syncCode() {
+  $('gutter').scrollTop = src.scrollTop;
+  const lh = parseFloat(getComputedStyle(src).lineHeight), pad = parseFloat(getComputedStyle(src).paddingTop);
+  const hl = $('hl');
+  hl.hidden = selLine === null;
+  hl.style.top = `${pad + (selLine - 1) * lh - src.scrollTop}px`;
+}
+src.addEventListener('scroll', syncCode);
+
 function update() {
   const { groups, errors, warnings } = parse(src.value);
   if (!groups.some((g) => g.name === selected)) selected = groups[0]?.name ?? null;
 
-  $('pills').replaceChildren(...groups.map((g) => {
+  $('pills').replaceChildren(...(groups.length < 2 ? [] : groups).map((g) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'pill';
@@ -30,6 +47,8 @@ function update() {
   }));
 
   const group = groups.find((g) => g.name === selected);
+  $('gtitle').textContent = group ? groupLabel(group, t) : '';
+  $('mascot').hidden = !group?.items.length;
   if (!group?.items.some((i) => i.line === selLine)) selLine = null;
   $('selbar').hidden = selLine === null;
   renderTimeline($('timeline'), group && { ...group, name: groupLabel(group, t) }, view, { selectedLine: selLine, onSelect: select, onDelete: deleteLine, onMove: moveLine });
@@ -37,9 +56,16 @@ function update() {
     const item = document.createElement('li');
     const sw = document.createElement('i');
     sw.className = `t-${TYPES.includes(type) ? type : 'unknown'}`;
-    item.append(sw, `${TYPES.includes(type) ? t(`type.${type}`) : type}: ${formatDuration(minutes)}`);
+    item.append(sw, Object.assign(document.createElement('span'), { textContent: `${TYPES.includes(type) ? t(`type.${type}`) : type} · ${formatDurationHuman(minutes, getLang())}` }));
     return item;
   }));
+
+  const n = groups.reduce((a, g) => a + g.items.length, 0);
+  const bad = errors.length + warnings.length;
+  $('count').className = bad ? 'bad' : '';
+  $('count').replaceChildren(icon(bad ? 'i-alert' : 'i-check'), t(n === 1 ? 'status.valid1' : 'status.valid', { n }) + (bad ? ` · ${t('status.issues', { n: bad })}` : ''));
+  $('nums').textContent = Array.from({ length: src.value.split('\n').length }, (_, i) => i + 1).join('\n');
+  syncCode();
 
   const li = (cls, msg) => Object.assign(document.createElement('li'), { className: cls, textContent: msg });
   $('issues').replaceChildren(...errors.map((e) => li('err', formatIssue(e, t))), ...warnings.map((w) => li('warn', formatIssue(w, t))));
@@ -57,7 +83,15 @@ function setPane(name) {
 }
 for (const b of document.querySelectorAll('#panes button')) b.addEventListener('click', () => setPane(b.dataset.pane));
 
-function select(line) { selLine = line; update(); }
+function select(line) {
+  selLine = line;
+  update();
+  if (line === null) return;
+  const lh = parseFloat(getComputedStyle(src).lineHeight), top = (line - 1) * lh;
+  if (top < src.scrollTop) src.scrollTop = top;
+  else if (top + 2 * lh > src.scrollTop + src.clientHeight) src.scrollTop = top + 2 * lh - src.clientHeight;
+  syncCode();
+}
 function deleteLine(line) {
   flush();
   selLine = null;
@@ -93,6 +127,7 @@ const step = (fn) => { flush(); restore(fn()); };
 src.addEventListener('input', () => { changed(); clearTimeout(timer); timer = setTimeout(flush, 400); });
 $('undo').addEventListener('click', () => step(() => history.undo()));
 $('redo').addEventListener('click', () => step(() => history.redo()));
+$('open').addEventListener('click', () => $('file').click());
 $('revert').addEventListener('click', () => step(() => history.revert()));
 document.addEventListener('click', (e) => {
   if (selLine !== null && !e.target.closest('.item')) select(null);
@@ -146,30 +181,37 @@ $('png').addEventListener('click', () => {
   if (g) exportPng(g, view, groupLabel(g, t));
 });
 
+const PX100 = DEFAULT_VIEW.px; // 100% zoom
+const pct = () => Math.round((view.px / PX100) * 100);
 function setView(patch) {
   Object.assign(view, patch);
-  view.px = Math.min(4, Math.max(0.5, view.px));
-  $('zoom').value = view.px;
+  view.px = Math.min(3 * PX100, Math.max(0.5 * PX100, view.px));
+  $('zoom-val').textContent = `${pct()}%`;
+  $('zoom-out').disabled = pct() <= 50;
+  $('zoom-in').disabled = pct() >= 300;
   localStorage.setItem(VKEY, JSON.stringify(view));
   update();
 }
-$('zoom').addEventListener('input', (e) => setView({ px: +e.target.value }));
+const zoomBy = (d) => setView({ px: (Math.round(pct() / 25) * 25 + d) * PX100 / 100 });
+$('zoom-out').addEventListener('click', () => zoomBy(-25));
+$('zoom-in').addEventListener('click', () => zoomBy(25));
 $('full').addEventListener('change', (e) => setView({ full: e.target.checked }));
-$('zoom').value = view.px;
 $('full').checked = view.full;
 
 function applyI18n() {
   document.documentElement.lang = getLang();
   document.title = t('doc.title');
   for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
-  for (const a of ['title', 'placeholder', 'aria-label']) {
+  for (const a of ['title', 'placeholder', 'aria-label', 'alt']) {
     for (const el of document.querySelectorAll(`[data-i18n-${a}]`)) el.setAttribute(a, t(el.getAttribute(`data-i18n-${a}`)));
   }
+  $('syntax-body').replaceChildren(...['group', 'line', 'time', 'types', 'ignored'].map((k) => Object.assign(document.createElement('li'), { textContent: t(`syntax.${k}`, { types: TYPES.join(', ') }) })));
   for (const b of document.querySelectorAll('#lang button')) b.setAttribute('aria-pressed', String(b.dataset.lang === getLang()));
 }
 for (const b of document.querySelectorAll('#lang button')) {
   b.addEventListener('click', () => { setLang(b.dataset.lang); applyI18n(); update(); });
 }
+$('syntax').addEventListener('click', () => $('syntax-dlg').showModal());
 applyI18n();
 
 // initial content: URL hash > localStorage > example files
@@ -180,4 +222,4 @@ src.value = (shared && LZString.decompressFromEncodedURIComponent(shared[1])) ||
 setPane(src.value.trim() ? 'view' : 'edit');
 history = createHistory(src.value);
 syncButtons();
-update();
+setView({});

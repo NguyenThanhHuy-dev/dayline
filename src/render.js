@@ -99,7 +99,9 @@ export function renderTimeline(el, group, view = DEFAULT_VIEW, ui = {}) {
   el.replaceChildren();
   if (!group || !group.items.length) {
     el.style.height = '';
-    el.textContent = t('timeline.empty');
+    const img = Object.assign(document.createElement('img'), { src: 'assets/capybara.svg', alt: '' });
+    el.append(Object.assign(document.createElement('div'), { className: 'empty' }));
+    el.firstChild.append(img, t('timeline.empty'));
     return;
   }
   const { items, t0, t1 } = layout(group, view.full);
@@ -161,7 +163,7 @@ export function layout(group, full = false) {
 export function exportPng(group, view = DEFAULT_VIEW, title = group?.name) {
   if (!group?.items.length) return;
   const { items, t0, t1 } = layout(group, view.full);
-  const W = 520, L = 56, TOP = 44, S = 2;
+  const W = 560, L = 64, TOP = 56, S = 2;
   const cv = document.createElement('canvas');
   cv.width = W * S;
   cv.height = (TOP + (t1 - t0) * view.px + 16) * S;
@@ -169,49 +171,64 @@ export function exportPng(group, view = DEFAULT_VIEW, title = group?.name) {
   ctx.scale(S, S);
   const css = getComputedStyle(document.documentElement);
   const v = (n) => css.getPropertyValue(n).trim();
-  const font = (w, px) => { ctx.font = `${w} ${px}px system-ui, sans-serif`; };
+  const font = (w, px, fam = 'system-ui, sans-serif') => { ctx.font = `${w} ${px}px ${fam}`; };
+  const MONO = 'ui-monospace, Menlo, Consolas, monospace';
+  const SERIF = "'Iowan Old Style', 'Palatino Linotype', Georgia, serif";
 
   ctx.fillStyle = v('--bg');
   ctx.fillRect(0, 0, W, cv.height / S);
   ctx.fillStyle = v('--fg');
-  font(700, 18);
-  ctx.fillText(title, 12, 28);
+  font(400, 26, SERIF);
+  ctx.fillText(title, 16, 34);
 
   ctx.textBaseline = 'middle';
-  font(400, 11);
+  ctx.fillStyle = v('--fg');
+  ctx.fillRect(L, TOP, 2, (t1 - t0) * view.px);
+  font(400, 12, MONO);
   for (let m = t0; m <= t1; m += 60) {
     const y = TOP + (m - t0) * view.px;
-    ctx.fillStyle = v('--muted');
-    ctx.fillText(formatTime(m), 10, y);
-    ctx.fillStyle = v('--line');
-    ctx.fillRect(L, y, W - L - 8, 1);
+    ctx.fillStyle = v('--fg');
+    ctx.textAlign = 'right';
+    ctx.fillText(formatTime(m), L - 14, y);
+    ctx.fillRect(L - 8, y - 1, 14, 2);
   }
+  ctx.textAlign = 'left';
   for (const it of items) {
     const y = TOP + (it.start - t0) * view.px;
     const h = (it.end - it.start) * view.px;
-    const x = L + 6, w = W - x - 8;
+    const x = L + 18, w = W - x - 12;
+    const ty = TYPES.includes(it.type) ? it.type : 'unknown';
     ctx.save();
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 6);
-    ctx.fillStyle = v(`--${TYPES.includes(it.type) ? it.type : 'unknown'}`);
+    ctx.roundRect(x, y, w, h, 12);
+    ctx.fillStyle = v(`--${ty}`);
     ctx.fill();
     ctx.clip();
-    if (!TYPES.includes(it.type)) { // hatch unknown, as in CSS
+    if (ty === 'unknown') { // hatch unknown, as in CSS
       ctx.strokeStyle = v('--bg');
       for (let d = -h; d < w; d += 10) { ctx.beginPath(); ctx.moveTo(x + d, y + h); ctx.lineTo(x + d + h, y); ctx.stroke(); }
     }
+    const short = (it.end - it.start) * view.px < SHORT_PX;
+    ctx.fillStyle = v(`--a-${ty}`);
+    ctx.beginPath();
+    ctx.roundRect(x + 11, short ? y + 6 : y + 10, 3, short ? h - 12 : Math.min(34, h - 20), 2);
+    ctx.fill();
     ctx.fillStyle = v('--fg');
     const time = `${formatTime(it.start)}-${formatTime(it.end)}`;
-    if ((it.end - it.start) * view.px < SHORT_PX) {
-      font(600, 13);
-      ctx.fillText(`${time}  ${it.title}`, x + 8, y + h / 2);
+    if (short) {
+      font(400, 12, MONO);
+      ctx.fillText(time, x + 24, y + h / 2);
+      const tw = ctx.measureText(time).width;
+      font(700, 14);
+      ctx.fillText(it.title, x + 24 + tw + 10, y + h / 2);
     } else {
-      font(400, 11);
-      ctx.fillText(time, x + 8, y + 12);
-      font(600, 13);
-      ctx.fillText(it.title, x + 8, y + 28);
+      font(400, 12, MONO);
+      ctx.fillText(time, x + 24, y + 17);
+      font(700, 16);
+      ctx.fillText(it.title, x + 24, y + 38);
       font(400, 12);
-      it.notes.forEach((n, k) => ctx.fillText(n, x + 8, y + 44 + k * 15));
+      ctx.fillStyle = v('--muted');
+      it.notes.forEach((n, k) => ctx.fillText(n, x + 24, y + 58 + k * 16));
     }
     ctx.restore();
   }

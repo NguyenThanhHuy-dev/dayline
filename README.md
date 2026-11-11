@@ -16,11 +16,11 @@ Mở http://localhost:8000. Test parser: `npm test` (node:test, không cần cà
 
 ## Cách dùng
 
-1. Bấm **Copy prompt mẫu**, dán vào ChatGPT (hoặc AI khác), thêm routine của bạn ở cuối.
-2. Copy kết quả AI trả về, dán vào ô bên trái (hoặc **Tải file .txt**). Timeline cập nhật ngay.
+1. Bấm **Sao chép mẫu prompt** (dưới ô nhập), dán vào ChatGPT (hoặc AI khác), thêm routine của bạn ở cuối.
+2. Copy kết quả AI trả về, dán vào ô bên trái (hoặc **Mở tệp .txt**). Timeline cập nhật ngay.
 3. Chọn nhóm ngày bằng các nút pill. Lỗi/cảnh báo hiện dưới ô nhập, theo số dòng.
 4. Thống kê giờ theo loại hiện trên timeline. Nội dung tự lưu vào localStorage.
-5. **Copy link chia sẻ**: nội dung nén (lz-string) vào URL hash, mở link là thấy. **Xuất PNG**: tải ảnh nhóm ngày đang chọn.
+5. **Sao chép liên kết**: nội dung nén (lz-string) vào URL hash, mở link là thấy. **Xuất PNG**: tải ảnh nhóm ngày đang chọn.
 
 ## Định dạng
 

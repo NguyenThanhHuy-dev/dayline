@@ -8,20 +8,34 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14l-4 -4l4 -4"/><path d="M5 10h11a4 4 0 1 1 0 8h-1"/></symbol>
+      <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l4 -4l-4 -4"/><path d="M19 10h-11a4 4 0 1 0 0 8h1"/></symbol>
+      <symbol id="i-revert" viewBox="0 0 24 24"><path d="M19.95 11a8 8 0 1 0 -.5 4m.5 5v-5h-5"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5l10 -10"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+      <symbol id="i-ext" viewBox="0 0 24 24"><path d="M17 7l-10 10"/><path d="M8 7l9 0l0 9"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12l14 0"/><path d="M13 18l6 -6"/><path d="M13 6l6 6"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12l14 0"/></symbol>
+    </defs>
+  </svg>
   <header>
-    <h1>dayline</h1>
-    <div id="lang" role="group" data-i18n-aria-label="lang.switch">
-      <button type="button" data-lang="vi">VI</button>
-      <button type="button" data-lang="en">EN</button>
+    <div class="brand">
+      <img src="favicon.svg" alt="" width="36" height="36">
+      <h1>dayline</h1>
+      <span class="crumb" aria-hidden="true">/</span>
+      <span class="crumb" data-i18n="brand.crumb">Planner</span>
     </div>
-    <div class="actions">
-      <button id="undo" type="button" title="Ctrl+Z" data-i18n="btn.undo">Undo</button>
-      <button id="redo" type="button" title="Ctrl+Shift+Z" data-i18n="btn.redo">Redo</button>
-      <button id="revert" type="button" data-i18n="btn.revert">Revert to original</button>
-      <button id="copy-prompt" type="button" data-i18n="btn.copyPrompt">Copy prompt template</button>
-      <button id="share" type="button" data-i18n="btn.share">Copy share link</button>
-      <button id="png" type="button" data-i18n="btn.png">Export PNG</button>
-      <label class="btn"><span data-i18n="btn.file">Load .txt file</span><input id="file" type="file" accept=".txt,text/plain" hidden></label>
+    <div class="head-actions">
+      <div id="lang" role="group" data-i18n-aria-label="lang.switch">
+        <button type="button" data-lang="vi">VI</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <button id="share" class="plain" type="button" data-i18n="btn.share">Copy link</button>
+      <button id="png" class="outline" type="button" data-i18n="btn.png">Export PNG</button>
     </div>
   </header>
   <nav id="panes" role="tablist">
@@ -29,20 +43,58 @@
     <button id="pane-view" type="button" role="tab" data-pane="view" data-i18n="pane.view">Timeline</button>
   </nav>
   <main>
-    <section class="editor">
-      <textarea id="src" spellcheck="false" data-i18n-placeholder="editor.placeholder"></textarea>
+    <section class="editor page">
+      <h2 data-i18n="editor.title">Schedule text</h2>
+      <div class="tools" role="toolbar" data-i18n-aria-label="editor.title">
+        <button id="undo" type="button" title="Ctrl+Z"><svg class="ic"><use href="#i-undo"/></svg><span data-i18n="btn.undo">Undo</span></button>
+        <button id="redo" type="button" title="Ctrl+Shift+Z"><svg class="ic"><use href="#i-redo"/></svg><span data-i18n="btn.redo">Redo</span></button>
+        <button id="revert" type="button"><svg class="ic"><use href="#i-revert"/></svg><span data-i18n="btn.revert">Restore original</span></button>
+        <button id="open" type="button"><svg class="ic"><use href="#i-file"/></svg><span data-i18n="btn.file">Open .txt file</span></button>
+        <input id="file" type="file" accept=".txt,text/plain" hidden>
+      </div>
+      <div class="code">
+        <div id="hl" hidden></div>
+        <div id="gutter" aria-hidden="true"><div id="nums"></div></div>
+        <textarea id="src" wrap="off" spellcheck="false" data-i18n-placeholder="editor.placeholder"></textarea>
+      </div>
+      <div class="flow">
+        <strong data-i18n="flow.title">Edit with ChatGPT</strong>
+        <ol>
+          <li><button id="copy-prompt" class="step" type="button" data-i18n="btn.copyPrompt">Copy prompt template</button></li>
+          <li><svg class="ic arrow" aria-hidden="true"><use href="#i-arrow"/></svg></li>
+          <li><a class="step" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer"><span data-i18n="flow.chatgpt">Edit in ChatGPT</span> <svg class="ic" aria-hidden="true"><use href="#i-ext"/></svg></a></li>
+          <li><svg class="ic arrow" aria-hidden="true"><use href="#i-arrow"/></svg></li>
+          <li><span class="step" data-i18n="flow.paste">Paste text</span></li>
+        </ol>
+      </div>
+      <div class="status">
+        <p id="count" aria-live="polite"></p>
+        <button id="syntax" class="link" type="button" data-i18n="syntax.link">Syntax</button>
+      </div>
       <ul id="issues" aria-live="polite"></ul>
     </section>
-    <section class="view">
-      <div id="pills" role="tablist"></div>
-      <div class="toolbar">
-        <label><span data-i18n="toolbar.zoom">Zoom</span> <input id="zoom" type="range" min="0.5" max="4" step="0.1"></label>
-        <label><input id="full" type="checkbox"> <span data-i18n="toolbar.full">Show full 24h</span></label>
+    <section class="view page">
+      <div class="vhead">
+        <h2 data-i18n="preview.title">Preview</h2>
+        <div class="zoom" role="group" data-i18n-aria-label="zoom.label">
+          <button id="zoom-out" type="button" data-i18n-aria-label="zoom.out"><svg class="ic"><use href="#i-minus"/></svg></button>
+          <output id="zoom-val" aria-live="polite"></output>
+          <button id="zoom-in" type="button" data-i18n-aria-label="zoom.in"><svg class="ic"><use href="#i-plus"/></svg></button>
+        </div>
+        <label class="full"><input id="full" type="checkbox"> <span data-i18n="toolbar.full">Show full 24h</span></label>
       </div>
+      <h3 id="gtitle"></h3>
+      <div id="pills" role="tablist"></div>
       <ul id="stats"></ul>
       <div id="timeline"></div>
+      <img id="mascot" src="assets/capybara.svg" alt="" data-i18n-alt="mascot.alt">
     </section>
   </main>
+  <dialog id="syntax-dlg" aria-labelledby="syntax-title">
+    <h2 id="syntax-title" data-i18n="syntax.link">Syntax</h2>
+    <ul id="syntax-body"></ul>
+    <form method="dialog"><button class="outline" data-i18n="syntax.close">Close</button></form>
+  </dialog>
   <div id="selbar" hidden>
     <button id="sel-del" type="button" data-i18n="btn.delete">Delete</button>
     <button id="sel-clear" type="button" data-i18n="btn.deselect">Deselect</button>
