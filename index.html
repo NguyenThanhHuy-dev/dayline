@@ -11,6 +11,8 @@
     <h1>routine-viz</h1>
     <div class="actions">
       <button id="copy-prompt" type="button">Copy prompt mẫu</button>
+      <button id="share" type="button">Copy link chia sẻ</button>
+      <button id="png" type="button">Xuất PNG</button>
       <label class="btn">Tải file .txt<input id="file" type="file" accept=".txt,text/plain" hidden></label>
     </div>
   </header>
@@ -21,9 +23,11 @@
     </section>
     <section class="view">
       <div id="pills" role="tablist"></div>
+      <ul id="stats"></ul>
       <div id="timeline"></div>
     </section>
   </main>
+  <script src="vendor/lz-string.min.js"></script>
   <script type="module" src="src/app.js"></script>
 </body>
 </html>

@@ -39,3 +39,6 @@ textarea { width: 100%; height: 55vh; resize: vertical; font: 13px/1.5 ui-monosp
 .t-personal { --c: var(--personal); } .t-commute { --c: var(--commute); } .t-work { --c: var(--work); }
 .t-meal { --c: var(--meal); } .t-study { --c: var(--study); } .t-exercise { --c: var(--exercise); }
 .t-chores { --c: var(--chores); } .t-relax { --c: var(--relax); } .t-sleep { --c: var(--sleep); } .t-unknown { --c: var(--unknown); }
+#stats { list-style: none; margin: 0 0 16px; padding: 0; display: flex; gap: 6px 14px; flex-wrap: wrap; font-size: 13px; }
+#stats li { display: flex; align-items: center; gap: 6px; }
+#stats i { width: 12px; height: 12px; border-radius: 3px; background: var(--c, var(--unknown)); border: 1px solid rgb(0 0 0 / .12); }

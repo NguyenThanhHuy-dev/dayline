@@ -15,6 +15,8 @@ Mở http://localhost:8000. Test parser: `npm test` (node:test, không cần cà
 1. Bấm **Copy prompt mẫu**, dán vào ChatGPT (hoặc AI khác), thêm routine của bạn ở cuối.
 2. Copy kết quả AI trả về, dán vào ô bên trái (hoặc **Tải file .txt**). Timeline cập nhật ngay.
 3. Chọn nhóm ngày bằng các nút pill. Lỗi/cảnh báo hiện dưới ô nhập, theo số dòng.
+4. Thống kê giờ theo loại hiện trên timeline. Nội dung tự lưu vào localStorage.
+5. **Copy link chia sẻ**: nội dung nén (lz-string) vào URL hash, mở link là thấy. **Xuất PNG**: tải ảnh nhóm ngày đang chọn.
 
 ## Định dạng
 
@@ -32,4 +34,4 @@ Ví dụ: `examples/weekday.txt`, `examples/weekend.txt`.
 
 ## Cấu trúc
 
-`parser.js` (text → model), `serializer.js` (model → text), `render.js`, `stats.js`, `prompt.js`, `app.js`.
+`parser.js` (text → model), `serializer.js` (model → text), `render.js`, `stats.js`, `prompt.js`, `app.js`. `vendor/lz-string.min.js` là bản copy lz-string 1.5.0 (MIT).
