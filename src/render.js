@@ -155,6 +155,10 @@ export function exportPng(group, view = DEFAULT_VIEW) {
     ctx.fillStyle = v(`--${TYPES.includes(it.type) ? it.type : 'unknown'}`);
     ctx.fill();
     ctx.clip();
+    if (!TYPES.includes(it.type)) { // hatch unknown, as in CSS
+      ctx.strokeStyle = v('--bg');
+      for (let d = -h; d < w; d += 10) { ctx.beginPath(); ctx.moveTo(x + d, y + h); ctx.lineTo(x + d + h, y); ctx.stroke(); }
+    }
     ctx.fillStyle = v('--fg');
     const time = `${formatTime(it.start)}-${formatTime(it.end)}`;
     if ((it.end - it.start) * view.px < SHORT_PX) {

@@ -116,9 +116,10 @@ const flash = (btn, text) => {
 };
 
 $('share').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
   location.hash = `d=${LZString.compressToEncodedURIComponent(src.value)}`;
   await navigator.clipboard.writeText(location.href);
-  flash(e.currentTarget, 'Đã copy link!');
+  flash(btn, 'Đã copy link!');
 });
 
 $('png').addEventListener('click', () => exportPng(parse(src.value).groups.find((g) => g.name === selected), view));
