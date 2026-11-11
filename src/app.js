@@ -2,6 +2,7 @@ import { parse, TYPES } from './parser.js';
 import { renderTimeline, exportPng, DEFAULT_VIEW } from './render.js';
 import { buildPrompt } from './prompt.js';
 import { createHistory } from './history.js';
+import { removeLine } from './edit.js';
 import { statsByType, formatDuration } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
@@ -10,6 +11,7 @@ const KEY = 'dayline:text';
 const VKEY = 'dayline:view';
 const view = { ...DEFAULT_VIEW, ...JSON.parse(localStorage.getItem(VKEY) ?? '{}') };
 let selected = null;
+let selLine = null; // source line of the selected block
 
 function update() {
   const { groups, errors, warnings } = parse(src.value);
@@ -27,7 +29,8 @@ function update() {
   }));
 
   const group = groups.find((g) => g.name === selected);
-  renderTimeline($('timeline'), group, view);
+  if (!group?.items.some((i) => i.line === selLine)) selLine = null;
+  renderTimeline($('timeline'), group, view, { selectedLine: selLine, onSelect: select, onDelete: deleteLine });
   $('stats').replaceChildren(...(group ? statsByType(group) : []).map(({ type, minutes }) => {
     const item = document.createElement('li');
     const sw = document.createElement('i');
@@ -38,6 +41,15 @@ function update() {
 
   const li = (cls, msg) => Object.assign(document.createElement('li'), { className: cls, textContent: msg });
   $('issues').replaceChildren(...errors.map((e) => li('err', e.msg)), ...warnings.map((w) => li('warn', w.msg)));
+}
+
+function select(line) { selLine = line; update(); }
+function deleteLine(line) {
+  flush();
+  selLine = null;
+  src.value = removeLine(src.value, line);
+  changed();
+  flush();
 }
 
 let history = createHistory();
@@ -55,6 +67,17 @@ src.addEventListener('input', () => { changed(); clearTimeout(timer); timer = se
 $('undo').addEventListener('click', () => step(() => history.undo()));
 $('redo').addEventListener('click', () => step(() => history.redo()));
 $('revert').addEventListener('click', () => step(() => history.revert()));
+document.addEventListener('click', (e) => {
+  if (selLine !== null && !e.target.closest('.item')) select(null);
+});
+document.addEventListener('keydown', (e) => {
+  if (selLine === null || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 'Escape') select(null);
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && !e.target.closest('input, textarea, select, [contenteditable]')) {
+    e.preventDefault();
+    deleteLine(selLine);
+  }
+});
 document.addEventListener('keydown', (e) => {
   if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
   const k = e.key.toLowerCase();

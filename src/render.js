@@ -5,7 +5,8 @@ export const DEFAULT_VIEW = { px: 1.5, full: false };
 const SHORT_PX = 60; // items shorter than this (in px) render on one line
 
 // shortcut: overlapping items are drawn on top of each other (a warning is shown), when needed add lanes
-export function renderTimeline(el, group, view = DEFAULT_VIEW) {
+// ui: { selectedLine, onSelect(line), onDelete(line) } - interactive only, exportPng ignores it
+export function renderTimeline(el, group, view = DEFAULT_VIEW, ui = {}) {
   el.replaceChildren();
   if (!group || !group.items.length) {
     el.style.height = '';
@@ -32,6 +33,17 @@ export function renderTimeline(el, group, view = DEFAULT_VIEW) {
     const time = `${formatTime(it.start)}-${formatTime(it.end)}`;
     div.title = [`${time} ${it.title}`, ...it.notes].join('\n');
     div.append(span('time', time), span('title', it.title), ...it.notes.map((n) => span('note', n)));
+    if (ui.onSelect) div.onclick = () => ui.onSelect(it.line);
+    if (it.line === ui.selectedLine) {
+      div.classList.add('selected');
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'del';
+      x.title = 'Xóa khối này';
+      x.textContent = '×';
+      x.onclick = (e) => { e.stopPropagation(); ui.onDelete?.(it.line); };
+      div.append(x);
+    }
     el.append(div);
   }
 }
